@@ -73,7 +73,7 @@ Install dependencies:
 
 ```bash
 python -m pip install pandas numpy matplotlib seaborn scikit-learn \
-  xgboost lightgbm mlxtend sqlalchemy psycopg[binary] python-dotenv \
+  xgboost lightgbm mlxtend sqlalchemy psycopg python-dotenv \
   jupyter
 
 ```
