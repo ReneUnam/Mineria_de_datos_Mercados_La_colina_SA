@@ -51,12 +51,40 @@ def verify_installation():
     except ImportError:
         errors.append("seaborn")
 
-    #8. SQLAlchemy
+    #8. dotenv
+    try:
+        import dotenv
+        print(f" Python-dotenv: installed")
+    except ImportError:
+        errors.append("python-dotenv")
+
+    #9. SQLAlchemy
     try:
         import sqlalchemy
         print(f" SQLAlchemy: {sqlalchemy.__version__}")
     except ImportError:
         errors.append("sqlalchemy")
+
+    #10. lightgbm
+    try:
+        import lightgbm as lgb
+        print(f" LightGBM: {lgb.__version__}")
+    except ImportError:
+        errors.append("lightgbm")
+
+    #11. mxltend
+    try:
+        import mlxtend
+        print(f" mlxtend: {mlxtend.__version__}")
+    except ImportError:
+        errors.append("mlxtend")
+
+    #12 . psycopg
+    try:
+        import psycopg
+        print(f" psycopg: {psycopg.__version__}")
+    except ImportError:
+        errors.append("psycopg")
 
     #Resume
     print("\n" + "=" * 60)
