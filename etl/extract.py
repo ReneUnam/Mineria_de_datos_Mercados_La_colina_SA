@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import random
 
 def generar_datos_crudos(num_registros=15000):
-    print("[EXTRACT] Generando datos crudos...")
+    print("📥 [EXTRACT] Generando datos crudos")
     np.random.seed(42)
     random.seed(42)
 
@@ -15,7 +15,6 @@ def generar_datos_crudos(num_registros=15000):
     abc_list = ['A', 'B', 'C']
     sistemas = ['POS', 'WMS', 'Compras', 'E-commerce']
 
-    # POL-TRA-01: Cortes semanales unificados (Solo Lunes)
     fecha_inicio = datetime(2024, 7, 1)
     fechas_semanales = [fecha_inicio + timedelta(weeks=i) for i in range(104)]
 
@@ -31,15 +30,23 @@ def generar_datos_crudos(num_registros=15000):
         dias_cobertura = random.randint(0, 35)
         inv_inicial = random.randint(0, 420)
         
-        # Lógica de quiebre
-        prob_quiebre = 0.15
-        if canal in ['Web', 'WhatsApp']: prob_quiebre += 0.20
-        if promocion in ['2x1', '2X1', 'Temporada']: prob_quiebre += 0.25
-        if tienda in ['Managua Sur', 'Jinotepe']: prob_quiebre += 0.15
-        if dias_retraso > 4: prob_quiebre += 0.20
+        # ==========================================
+        # LÓGICA CALIBRADA PARA ACERCARSE AL 39.4%
+        # ==========================================
+        prob_quiebre = 0.05  # Probabilidad base muy baja (5%)
+        
+        # Sumamos pesos solo si se cumplen las condiciones de riesgo
+        if canal in ['Web', 'WhatsApp']: prob_quiebre += 0.15
+        if promocion in ['2x1', '2X1', 'Temporada']: prob_quiebre += 0.18
+        if tienda in ['Managua Sur', 'Jinotepe']: prob_quiebre += 0.12
+        if dias_retraso > 4: prob_quiebre += 0.15
             
-        # POL-CAL-01: Inyección de nulos en variable objetivo
-        quiebre = None if random.random() < 0.03 else (1 if random.random() < min(0.90, prob_quiebre) else 0)
+        # POL-CAL-01: Inyección de nulos (datos no consolidados)
+        if random.random() < 0.03:
+            quiebre = None
+        else:
+            # Determinamos el quiebre basados en la probabilidad calculada
+            quiebre = 1 if random.random() < prob_quiebre else 0
 
         data.append({
             'id_producto_tienda_semana': f"REG-{i:05d}",
