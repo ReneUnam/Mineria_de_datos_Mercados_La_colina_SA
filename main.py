@@ -12,13 +12,13 @@ def ejecutar_pipeline():
     df_crudo = generar_datos_crudos(15000)
     
     # 2. Transformar y Validar Calidad (V1 y Rechazos)
-    df_limpio, df_rechazos = aplicar_gobierno_y_calidad(df_crudo)
+    df_limpio, df_rechazos, df_bitacora = aplicar_gobierno_y_calidad(df_crudo)
     
     # 3. Feature Engineering (Tablón Analítico)
     df_features = construir_features(df_limpio)
     
     # 4. Cargar a BD
-    cargar_a_bd(df_features, df_rechazos)
+    cargar_a_bd(df_features, df_rechazos, df_bitacora)
     
     print("="*60)
     print("🎉 PIPELINE FINALIZADO. DATOS LISTOS PARA MINERÍA.")

@@ -1,69 +1,55 @@
 import pandas as pd
 
 def calcular_kpis_calidad(df):
-    """Calcula los 3 KPIs de Calidad solicitados por el profesor."""
+    """Calcula los 3 KPIs de Calidad programados."""
     total = len(df)
     if total == 0: return 100.0, 100.0, 100.0
     
-    # KPI 1: TCR (Completitud) - Sin nulos en canal_venta ni quiebre_stock
+    # KPI 1: TCR (Completitud)
     completos = len(df.dropna(subset=['canal_venta', 'quiebre_stock']))
     tcr = (completos / total) * 100
 
-    # KPI 2: TED (Estandarización) - Promociones correctas
+    # KPI 2: TED (Estandarización)
     promos_validas = ['Sin promoción', '2x1', 'Descuento', 'Combo', 'Temporada']
     estandarizados = len(df[df['tipo_promocion'].isin(promos_validas)])
     ted = (estandarizados / total) * 100
 
-    # KPI 3: TDR (Rango) - Ventas entre 5 y 240
+    # KPI 3: TDR (Rango)
     en_rango = len(df[(df['ventas_unidades'] >= 5) & (df['ventas_unidades'] <= 240)])
     tdr = (en_rango / total) * 100
 
     return tcr, ted, tdr
 
 def aplicar_gobierno_y_calidad(df_crudo):
-    print("\n🛡️ [TRANSFORM] Iniciando Validador de Calidad y Gobernanza...")
     df = df_crudo.copy()
-    total_inicial = len(df)
-
-    # 1. MEDIR CALIDAD ANTES DE LA TRANSFORMACIÓN
-    tcr_antes, ted_antes, tdr_antes = calcular_kpis_calidad(df)
-
-    # 2. APLICAR REGLAS DE TRANSFORMACIÓN (El "Hacer" del ciclo PHVA)
+    bitacora = [] # Aquí guardaremos las incidencias
     
-    # Regla TED: Arreglar ruido tipográfico (A + B = C, esto SÍ se puede arreglar)
+    # 1. IDENTIFICAR INCIDENCIAS (Antes de transformar)
+    nulos_target = df['quiebre_stock'].isnull().sum()
+    fuera_rango = len(df[(df['ventas_unidades'] < 5) | (df['ventas_unidades'] > 240)])
+    ruido_promo = len(df[df['tipo_promocion'].isin(['2X1', 'DESCUENTO', 'COMBO'])])
+    
+    # 2. REGISTRAR EN BITÁCORA 
+    if nulos_target > 0:
+        bitacora.append({'Incidencia': f'{nulos_target} registros con Target Nulo', 'Causa': 'Falta de consolidación POS/WMS', 'Tratamiento': 'Descarte (Aislamiento)', 'Responsable': 'Custodio TI'})
+    if fuera_rango > 0:
+        bitacora.append({'Incidencia': f'{fuera_rango} registros con Ventas fuera de rango', 'Causa': 'Error de digitación en sucursal', 'Tratamiento': 'Descarte (Aislamiento)', 'Responsable': 'Data Steward'})
+    if ruido_promo > 0:
+        bitacora.append({'Incidencia': f'{ruido_promo} registros con ruido tipográfico', 'Causa': 'Falta de validación en E-commerce', 'Tratamiento': 'Homologación (A+B=C)', 'Responsable': 'Data Steward'})
+
+    df_bitacora = pd.DataFrame(bitacora)
+
+    # 3. APLICAR ACCIÓN CORRECTIVA (Versión Derivada)
+    # Homologación (Lo que se salva)
     mapeo_promo = {'2X1': '2x1', 'DESCUENTO': 'Descuento', 'COMBO': 'Combo'}
     df['tipo_promocion'] = df['tipo_promocion'].replace(mapeo_promo)
-    
-    # Regla TCR: Imputar canal de venta nulo (Asumimos 'Tienda' por defecto)
     df['canal_venta'] = df['canal_venta'].fillna('Tienda')
 
-    # Regla TCR y TDR: Separar lo insalvable (Nulos en Target y Fuera de Rango)
-    # Si falta la variable objetivo, no se puede inventar.
-    mascara_validos = (
-        df['quiebre_stock'].notnull() & 
-        (df['ventas_unidades'] >= 5) & 
-        (df['ventas_unidades'] <= 240)
-    )
-    
+    # Descarte (Lo que no se salva)
+    mascara_validos = (df['quiebre_stock'].notnull() & (df['ventas_unidades'] >= 5) & (df['ventas_unidades'] <= 240))
     df_limpio = df[mascara_validos].copy()
     df_rechazos = df[~mascara_validos].copy()
 
-    # 3. MEDIR CALIDAD DESPUÉS DE LA TRANSFORMACIÓN
-    tcr_despues, ted_despues, tdr_despues = calcular_kpis_calidad(df_limpio)
-
-    # 4. GENERAR HALLAZGOS 
-    print("\n📊 REPORTE DE HALLAZGOS DE CALIDAD (Auditoría):")
-    print("-" * 60)
-    print(f"Registros procesados: {total_inicial}")
-    print(f"  ➤ KPI 1 (TCR - Completitud): Subió de {tcr_antes:.1f}% a {tcr_despues:.1f}%")
-    print(f"  ➤ KPI 2 (TED - Estandarización): Subió de {ted_antes:.1f}% a {ted_despues:.1f}%")
-    print(f"  ➤ KPI 3 (TDR - En Rango): Subió de {tdr_antes:.1f}% a {tdr_despues:.1f}%")
-    print("-" * 60)
-    print(f"📝 CONCLUSIÓN DEL DATA STEWARD:")
-    print(f"De {total_inicial} registros, se corrigieron automáticamente los errores tipográficos.")
-    print(f"Sin embargo, {len(df_rechazos)} registros fueron DESCARTADOS por no tener variable objetivo")
-    print(f"o por tener ventas irreales. El dataset final tiene {len(df_limpio)} registros 100% fiables.")
-    print("-" * 60)
-
     df_limpio['quiebre_stock'] = df_limpio['quiebre_stock'].astype(int)
-    return df_limpio, df_rechazos
+    
+    return df_limpio, df_rechazos, df_bitacora

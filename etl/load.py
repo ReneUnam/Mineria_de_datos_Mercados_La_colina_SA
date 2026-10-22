@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def cargar_a_bd(df_analitico, df_rechazos):
-    print("[LOAD] Cargando datos a PostgreSQL...")
+# Agregamos df_bitacora como el tercer argumento
+def cargar_a_bd(df_analitico, df_rechazos, df_bitacora):
+    print("💾 [LOAD] Cargando datos a PostgreSQL...")
     
     # Leer credenciales del archivo .env
     user = os.getenv('DB_USER', 'postgres')
@@ -23,15 +24,18 @@ def cargar_a_bd(df_analitico, df_rechazos):
         # Dataset 1: Para Modelos Predictivos (Árboles, XGBoost, etc.)
         df_analitico.to_sql('dw_inventario_predictivo', engine, if_exists='replace', index=False)
         
-        # Dataset 2: Para Reglas de Asociación (Apriori) - Solo columnas necesarias
+        # Dataset 2: Para Reglas de Asociación (Apriori)
         df_apriori = df_analitico[['id_producto_tienda_semana', 'tienda', 'familia_producto', 'tipo_promocion', 'quiebre_stock']]
         df_apriori.to_sql('dw_promociones_apriori', engine, if_exists='replace', index=False)
         
-        # Tabla de Auditoría (Gobierno de Datos)
+        # Tabla de Auditoría 1: Cuarentena (Gobierno de Datos)
         df_rechazos.to_sql('staging_rechazos_calidad', engine, if_exists='replace', index=False)
+
+        # Tabla de Auditoría 2: Bitácora de Incidencias (NUEVO)
+        df_bitacora.to_sql('auditoria_bitacora', engine, if_exists='replace', index=False)
         
-        print("Carga exitosa en PostgreSQL.")
-        print("POL-SEG-01: Recuerda configurar RBAC en PostgreSQL para la columna 'dias_retraso_proveedor'.")
+        print("✅ Carga exitosa en PostgreSQL (Incluyendo Bitácora de Auditoría).")
+        print("🔒 POL-SEG-01: Recuerda configurar RBAC en PostgreSQL para la columna 'dias_retraso_proveedor'.")
         
     except Exception as e:
         print(f"❌ Error de conexión a BD: {e}")
