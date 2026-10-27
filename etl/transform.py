@@ -1,7 +1,6 @@
 import pandas as pd
 
 def calcular_kpis_calidad(df):
-    """Calcula los 3 KPIs de Calidad programados."""
     total = len(df)
     if total == 0: return 100.0, 100.0, 100.0
     
@@ -41,12 +40,18 @@ def aplicar_gobierno_y_calidad(df_crudo):
 
     # 3. APLICAR ACCIÓN CORRECTIVA (Versión Derivada)
     # Homologación (Lo que se salva)
+
+    #POL-USO-01 (Catálogo Maestro)
     mapeo_promo = {'2X1': '2x1', 'DESCUENTO': 'Descuento', 'COMBO': 'Combo'}
     df['tipo_promocion'] = df['tipo_promocion'].replace(mapeo_promo)
+
     df['canal_venta'] = df['canal_venta'].fillna('Tienda')
 
     # Descarte (Lo que no se salva)
+    #POL-CAL-01 (Valores en Rango y Target Nulo):
     mascara_validos = (df['quiebre_stock'].notnull() & (df['ventas_unidades'] >= 5) & (df['ventas_unidades'] <= 240))
+    
+    #POL-TRA-01 (Linaje y Trazabilidad)
     df_limpio = df[mascara_validos].copy()
     df_rechazos = df[~mascara_validos].copy()
 
