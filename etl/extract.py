@@ -137,9 +137,16 @@ def generar_datos_crudos(num_registros=15000):
         if ventas > 120: score_ret += 1.00                               # Pedidos de gran volumen
         
         retraso_critico = 1 if random.random() < sigmoid(score_ret) else 0
-        # Sobreinventario / Estancamiento (KPI 2): Finanzas (~18% base)
-        score_est = -2.20 + (1.60 if clasificacion_abc == 'C' else 0) + (1.10 if promo_base == 'Sin promoción' else 0) + (1.20 if inv_inicial > 230 else 0)
-        estancamiento = 1 if random.random() < sigmoid(score_est) else 0
+
+        #Preferencia de Canal Digital (Comportamiento Humano / Omnicanal - ~35% base)
+        # Factores: Urbanismo (tráfico), conveniencia de carga pesada y compras de impulso (FOMO)
+        score_dig = -1.50
+        if tienda == 'Managua Sur': score_dig += 1.80                      # Tráfico urbano y bancarización digital
+        if promo_base in ['2x1', '2X1', 'Temporada']: score_dig += 1.40     # Ansiedad por apartar la oferta (FOMO)
+        if familia in ['Abarrotes', 'Bebidas']: score_dig += 1.10          # Productos pesados (conveniencia de delivery)
+        if ventas > 130: score_dig += 0.90                                 # Compras de gran volumen familiar
+        if tienda in ['Diriamba', 'Masatepe']: score_dig -= 1.20           # Hábito arraigado de compra presencial
+        preferencia_digital = 1 if random.random() < sigmoid(score_dig) else 0
 
         # Alta Rotación (KPI 9): Comercial (~24% base)
         ratio_rii = ventas / max(inv_inicial, 1)
@@ -184,7 +191,7 @@ def generar_datos_crudos(num_registros=15000):
             'sistema_origen': sistema_origen,
             'quiebre_stock': quiebre_final,
             'target_retraso_critico': retraso_critico,
-            'target_estancamiento': estancamiento,
+            'target_preferencia_digital': preferencia_digital,
             'target_alta_rotacion': alta_rotacion
         })
 
