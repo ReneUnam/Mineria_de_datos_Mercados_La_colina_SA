@@ -130,11 +130,11 @@ def generar_datos_crudos(num_registros=15000):
         # =================================================================
         
         # Retraso Crítico (KPI 4): Compras (~22% base)
-        score_ret = -2.60
-        if familia in ['Lácteos', 'Congelados']: score_ret += 1.80       # Fricción de refrigeración
-        if tienda in ['Managua Sur', 'Jinotepe']: score_ret += 1.20       # Cuello de botella en ruta
-        if sistema_origen in ['Compras', 'E-commerce']: score_ret += 1.00 # Hallazgo 10: Compras en Excel genera desfase
-        if ventas > 120: score_ret += 1.00                               # Pedidos de gran volumen
+        score_ret = -2.80 # Bajamos la base para limpiar los falsos positivos
+        if familia in ['Lácteos', 'Congelados']: score_ret += 2.00    # Señal más fuerte (+2.0)
+        if tienda in ['Managua Sur', 'Jinotepe']: score_ret += 1.50   # Señal más fuerte (+1.5)
+        if ventas > 120: score_ret += 1.20                            # Señal más fuerte (+1.2)
+        if sistema_origen in ['Compras', 'E-commerce']: score_ret += 1.00
         
         retraso_critico = 1 if random.random() < sigmoid(score_ret) else 0
 
@@ -163,15 +163,20 @@ def generar_datos_crudos(num_registros=15000):
         # =================================================================
         # AUDITORÍA Y CALIDAD DE DATOS (Data Steward)
         # =================================================================
-        canal_final = canal if random.random() > 0.03 else None
-        quiebre_final = quiebre_real if random.random() > 0.02 else None
+        canal_final = canal if random.random() > 0.026 else None
+        quiebre_final = quiebre_real if random.random() > 0.026 else None
 
-        if random.random() < 0.04 and promo_base == '2x1': promocion = '2X1'
-        elif random.random() < 0.04 and promo_base == 'Combo': promocion = 'COMBO'
-        elif random.random() < 0.04 and promo_base == 'Descuento': promocion = 'DESCUENTO'
-        else: promocion = promo_base
+        # KPI 2: Estandarización / Ruido Tipográfico (Buscamos ~62.8% de calidad -> 37.2% de errores)
+        # Como las promos 2x1, Combo y Descuento suman el ~61% de los datos, 
+        if promo_base in ['2x1', 'Combo', 'Descuento'] and random.random() < 0.61:
+            if promo_base == '2x1': promocion = '2X1'
+            elif promo_base == 'Combo': promocion = 'COMBO'
+            elif promo_base == 'Descuento': promocion = 'DESCUENTO'
+        else:
+            promocion = promo_base
 
-        if random.random() < 0.03:
+        # KPI 3: Valores fuera de rango (Buscamos ~96.1% de calidad -> 3.9% de anomalías)
+        if random.random() < 0.039:
             ventas_final = random.choice([-15, 290, 450])
         else:
             ventas_final = ventas
